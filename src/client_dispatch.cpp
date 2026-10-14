@@ -517,6 +517,7 @@ void SendspinClient::process_json_message(SendspinConnection& connection, const 
                 // The nursery scan later in this tick sends client/hello in reply; nothing
                 // needs to be scheduled here.
                 conn->set_server_hello_received(true);
+                this->connection_manager_->on_rehandshake_server_hello(conn);
 
                 SS_LOGD(TAG, "Connected to server '%s' (server_id=%s)", hello_msg.name.c_str(),
                         conn->get_server_id().c_str());
