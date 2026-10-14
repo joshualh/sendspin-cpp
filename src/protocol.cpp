@@ -1012,7 +1012,7 @@ std::string format_client_stream_start_message(const ClientStreamStartMessage* m
 
     // roles/source/v1.md "client-stream/start": bit_depth is required even for opus, which ignores
     // it.
-    root["type"] = "client-stream/start";
+    root["type"] = "client_stream/start";
     JsonObject source_json = root["payload"]["source"].to<JsonObject>();
     source_json["codec"] = to_cstr(msg->codec);
     source_json["channels"] = msg->channels;
@@ -1031,7 +1031,7 @@ std::string format_client_stream_end_message(SendspinArenaAllocator& arena) {
     JsonDocument doc = make_json_document(arena);
     JsonObject root = doc.to<JsonObject>();
 
-    root["type"] = "client-stream/end";
+    root["type"] = "client_stream/end";
     // roles/source/v1.md "client-stream/end": no payload fields, but the envelope carries a payload
     // object like every other message.
     root["payload"].to<JsonObject>();
