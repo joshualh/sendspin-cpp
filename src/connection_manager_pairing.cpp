@@ -300,12 +300,11 @@ void ConnectionManager::handle_enter_pairing_psk(SendspinConnection* conn, uint3
     // and room for the record is made where it is stored.
     auto outcome = this->client_->record_store_->resolve_pairing_outcome(server_id);
 
-    // pairing.md "Pairing PSK Flow": after the pairing server/activate the client sends
-    // client/pair-init followed immediately by client/pair-finalize, without waiting for a
-    // server response. pair-init starts the attempt and carries the pairing index alone; the
-    // PSK flow has no PAKE round and so no commit_B.
-    SS_LOGI(TAG, "Sending client/pair-init (pairing_psk) for server_id=%s", server_id.c_str());
-    conn->send_app_json(format_client_pair_init_message(pairing_index, this->json_arena()));
+    // Music Assistant 2.10.6 / aiosendspin 9.1.1 uses the Pairing PSK flow
+    // with client/pair-finalize as its first (and only) client request.
+    // Sending client/pair-init first is rejected as an unexpected frame.
+    SS_LOGI(TAG, "Sending client/pair-finalize directly (legacy pairing_psk) for server_id=%s",
+            server_id.c_str());
     conn->pairing_session().attempt_deadline_us = platform_time_us() + PAIRING_ATTEMPT_TIMEOUT_US;
 
     // Send client/pair-finalize with the long-term PSK (base64url-encoded, 43 chars).
