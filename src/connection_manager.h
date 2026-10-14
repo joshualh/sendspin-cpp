@@ -462,6 +462,10 @@ public:
     /// before this returns.
     void on_server_activate(SendspinConnection* conn, ServerActivateMessage&& msg);
 
+    // Compatibility with aiosendspin 9.1.1: reply to the repeated server/hello
+    // after an admitted connection completes an in-band Noise re-handshake.
+    void on_rehandshake_server_hello(SendspinConnection* conn);
+
     /// @brief Handles a pair/abort from the server (an unrecognized reason arrives as
     /// METHOD_NOT_SUPPORTED). Only an admitted connection hosts a pairing attempt.
     void on_pair_abort(SendspinConnection* conn, PairAbortReason reason);
