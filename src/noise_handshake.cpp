@@ -174,10 +174,33 @@ std::optional<Msg1CoreResult> run_msg1_core(HandshakeKind kind, const Identity& 
         return std::nullopt;
     }
 
-    // messaging.md "noise/handshake": the payload declares which category the server is using the
-    // referenced PSK as. A missing or unknown code is a malformed payload, which connection.md
-    // "Failure Handling" makes a silent failure.
+    // Compatibility: aiosendspin 9.1.1 (Music Assistant 2.10.6) sends only
+    // {"psk_id":"..."} inside the authenticated Noise msg1 payload.
+    // Newer servers include psk_category. Never infer if a category was
+    // explicitly supplied but invalid, and never infer trust from the ID itself.
     auto psk_category = psk_category_from_string(psk_category_code);
+    if (psk_category_code.empty()) {
+        // Resolve the ID only against credentials actually held locally.
+        // Reject ambiguous matches rather than choosing a category arbitrarily.
+        for (const auto candidate : {PskCategory::SENTINEL, PskCategory::PAIRING, PskCategory::LONG_TERM}) {
+            if (record_store.resolve_by_psk_id(psk_id, candidate).has_value()) {
+                if (psk_category.has_value()) {
+                    SS_LOGE(TAG, "%s: ambiguous legacy psk_id='%s'", log_prefix, psk_id.c_str());
+                    return std::nullopt;
+                }
+                psk_category = candidate;
+            }
+        }
+        // Preserve the existing initial-handshake Sentinel fallback for an
+        // unknown credential; the final Noise authentication still applies.
+        if (!psk_category.has_value() && kind == HandshakeKind::INITIAL) {
+            psk_category = PskCategory::SENTINEL;
+        }
+        if (psk_category.has_value()) {
+            SS_LOGD(TAG, "%s: legacy msg1 without psk_category (resolved from local credentials)", log_prefix);
+            psk_category_code = "legacy-inferred";
+        }
+    }
     if (!psk_category.has_value()) {
         SS_LOGE(TAG, "%s: msg1 payload psk_category missing or unknown ('%s')", log_prefix,
                 psk_category_code.c_str());
