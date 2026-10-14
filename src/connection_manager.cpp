@@ -1538,6 +1538,19 @@ void ConnectionManager::park_for_reaping(std::shared_ptr<SendspinConnection> con
 // Hello handshake
 // ============================================================================
 
+void ConnectionManager::on_rehandshake_server_hello(SendspinConnection* conn) {
+    // Initial handshakes are handled by scan_nursery(), exactly as before.
+    // The older Music Assistant server repeats server/hello following a
+    // successful in-band re-handshake, including on already admitted clients.
+    if (this->find_admitted(conn) == nullptr || conn->first_activate_received()) {
+        return;
+    }
+    SS_LOGI(TAG, "Legacy re-handshake: replying to repeated server/hello");
+    if (!this->send_hello_message(conn)) {
+        conn->close_silently(SendspinGoodbyeReason::UNAUTHORIZED);
+    }
+}
+
 bool ConnectionManager::send_hello_message(SendspinConnection* conn) {
     // A transport that is gone reports its close, which drops the connection; one that never
     // does is reaped at the establish deadline.
