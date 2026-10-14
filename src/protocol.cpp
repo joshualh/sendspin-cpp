@@ -865,26 +865,18 @@ std::string format_client_hello_message(const ClientHelloMessage* msg,
             root["payload"]["device_info"]["mac_address"] = info.mac_address.value();
         }
     }
-    // pairing.md "client/hello pair-method descriptor": supported_pair_methods is an object keyed
-    // by pairing method identifier, each value the method's descriptor. It is REQUIRED (every
-    // client implements at least pairing_psk, messaging.md "client/hello"), so the object is
-    // emitted even for an empty list.
+    // Music Assistant 2.10.6 / aiosendspin 9.1.1 expects a list of
+    // descriptors, each with a "method" field, not a keyed object.
     {
-        JsonObject methods_obj = root["payload"]["supported_pair_methods"].to<JsonObject>();
+        JsonArray methods = root["payload"]["supported_pair_methods"].to<JsonArray>();
         for (const auto& desc : msg->supported_pair_methods) {
-            JsonObject method_obj = methods_obj[to_cstr(desc.method)].to<JsonObject>();
+            JsonObject method_obj = methods.add<JsonObject>();
+            method_obj["method"] = to_cstr(desc.method);
             const auto& out_channels = desc.out_channels;
             if (out_channels.has_value() && !out_channels->empty()) {
                 JsonArray ch_arr = method_obj["out_channels"].to<JsonArray>();
                 for (const auto& ch : out_channels.value()) {
                     ch_arr.add(to_cstr(ch));
-                }
-            }
-            const auto& formats = desc.formats;
-            if (formats.has_value() && !formats->empty()) {
-                JsonArray fmt_arr = method_obj["formats"].to<JsonArray>();
-                for (const auto& fmt : formats.value()) {
-                    fmt_arr.add(to_cstr(fmt));
                 }
             }
             const auto& locations = desc.locations;
